@@ -135,9 +135,9 @@ public class MyActivity extends ListActivity {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
 
-            StringBuffer sb  = new StringBuffer();
+            StringBuilder sb  = new StringBuilder();
 
-            String line = "";
+            String line;
             while( ( line = br.readLine())  != null){
                 sb.append(line);
             }
@@ -149,7 +149,8 @@ public class MyActivity extends ListActivity {
         }catch(Exception e){
             Log.d(TAG,"Exception while downloading url" + e.toString());
         }finally{
-            iStream.close();
+            if(iStream != null)
+                iStream.close();
         }
 
         return data;
@@ -196,7 +197,7 @@ public class MyActivity extends ListActivity {
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
 
-            if(pDialog != null && pDialog.isShowing() == true) {
+            if(pDialog != null && pDialog.isShowing()) {
                 pDialog.dismiss();
             }
 

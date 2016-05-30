@@ -22,6 +22,8 @@ import java.net.URL;
 
 /**
  * Created by monalisa on 27/05/16.
+ * list item will be opened in detail in this activity,
+ * image will be downloaded and shown.
  */
 public class ItemDetailActivity extends Activity{
     public static final String TAG = "ItemDetailActivity";
