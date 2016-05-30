@@ -8,22 +8,23 @@
         android:id="@+id/iv_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:padding="3dp"/>
     
     <android.support.v7.widget.AppCompatTextView
         android:id="@+id/actv_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_toRightOf="@id/iv_image"/>
+        android:layout_below="@id/iv_image"/>
 
     <android.support.v7.widget.AppCompatTextView
         android:id="@+id/actv_detail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16dp"
-        android:layout_below="@id/iv_image"/>
+        android:textSize="16sp"
+        android:layout_below="@id/actv_title"/>
 
 
 

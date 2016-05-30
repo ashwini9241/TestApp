@@ -4,14 +4,21 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.squareup.okhttp.OkHttpClient;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 /**
  * Created by monalisa on 27/05/16.
@@ -24,6 +31,8 @@ public class ItemDetailActivity extends Activity{
     private static final String DESCRIPTION = "description";
     private ProgressDialog simpleWaitDialog;
     private ImageView ivImage;
+    private boolean isDownloadFailed = false;
+    private String imageUrl = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -36,7 +45,7 @@ public class ItemDetailActivity extends Activity{
         // Get JSON values from previous intent
         String title = in.getStringExtra(TITLE);
         String detail = in.getStringExtra(DESCRIPTION);
-        String imageUrl = in.getStringExtra(IMAGE_URL);
+        imageUrl = in.getStringExtra(IMAGE_URL);
 
         Log.d(TAG, "onCreate: imageUrl:" + imageUrl);
 
@@ -48,15 +57,45 @@ public class ItemDetailActivity extends Activity{
         tvTitle.setText(title);
         tvDesc.setText(detail);
 
+        // new ImageDownloader().execute(imageUrl);
+        Picasso.with(this).load(imageUrl).
+                placeholder(R.drawable.ic_wait).
+                error(R.drawable.ic_download).
+                into(ivImage, callback);
+
+        ivImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(isDownloadFailed){
+                    Picasso.with(ItemDetailActivity.this).load(imageUrl).
+                            placeholder(R.drawable.ic_wait).
+                            error(R.drawable.ic_download).
+                            into(ivImage, callback);
+                }
+            }
+        });
+
     }
 
-    private class ImageDownloader extends AsyncTask<String, Integer, Bitmap> {
+    private Callback callback = new Callback() {
+        @Override
+        public void onSuccess() {
+            Log.d(TAG, "onSuccess: Image downloaded successfully");
+            isDownloadFailed = false;
+        }
+
+        @Override
+        public void onError() {
+            isDownloadFailed = true;
+        }
+    };
+
+    /*private class ImageDownloader extends AsyncTask<String, Integer, Bitmap> {
 
         @Override
         protected Bitmap doInBackground(String... param) {
             // TODO Auto-generated method stub
-            //return downloadBitmap(param[0]);
-            return null;
+            return downloadBitmap(param[0]);
         }
 
 
@@ -76,6 +115,21 @@ public class ItemDetailActivity extends Activity{
 
         }
 
+        private Bitmap downloadBitmap(String imageUrl){
 
-    }
+            Bitmap image = null;
+            if(imageUrl == null){
+                return image;
+            }
+            try{
+                InputStream is = new URL(imageUrl).openStream();
+                image = BitmapFactory.decodeStream(is);
+
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+            return image;
+        }
+
+    }*/
 }

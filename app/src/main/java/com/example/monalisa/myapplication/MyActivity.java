@@ -1,12 +1,17 @@
 package com.example.monalisa.myapplication;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListAdapter;
@@ -46,28 +51,70 @@ public class MyActivity extends ListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my);
-        itemList = new ArrayList<HashMap<String, String>>();
+        // check if not online
+        if(! isOnline()){
 
-        mListView = getListView();
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String title = ((TextView) view.findViewById(R.id.tv_title)).getText().toString();
-                String detail = ((TextView) view.findViewById(R.id.tv_detail)).getText().toString();
-                HashMap<String, String> map = (HashMap<String, String>) parent.getItemAtPosition(position);
+            try {
+                final AlertDialog alertDialog = new AlertDialog.Builder(MyActivity.this).create();
 
-                String imageUrl = map.get(IMAGE_URL);
+                alertDialog.setTitle("Info");
+                alertDialog.setMessage("Internet not available, Check your internet connectivity and try again");
+                alertDialog.setIcon(android.R.drawable.ic_dialog_alert);
+                alertDialog.setButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                });
 
-                Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
-                in.putExtra(TITLE, title);
-                in.putExtra(DESCRIPTION, detail);
-                in.putExtra(IMAGE_URL, imageUrl);
+                alertDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+                    @Override
+                    public void onCancel(DialogInterface dialog) {
+                        finish();
+                    }
+                });
 
-                startActivity(in);
+                alertDialog.show();
             }
-        });
+            catch(Exception e)
+            {
+                Log.d(TAG, "Show Dialog: "+e.getMessage());
+            }
+        } else {
 
-        new DownloadTask().execute(urlStr);
+
+            itemList = new ArrayList<HashMap<String, String>>();
+
+            mListView = getListView();
+            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    String title = ((TextView) view.findViewById(R.id.tv_title)).getText().toString();
+                    String detail = ((TextView) view.findViewById(R.id.tv_detail)).getText().toString();
+                    HashMap<String, String> map = (HashMap<String, String>) parent.getItemAtPosition(position);
+
+                    String imageUrl = map.get(IMAGE_URL);
+
+                    Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
+                    in.putExtra(TITLE, title);
+                    in.putExtra(DESCRIPTION, detail);
+                    in.putExtra(IMAGE_URL, imageUrl);
+
+                    startActivity(in);
+                }
+            });
+
+            new DownloadTask().execute(urlStr);
+        }
+    }
+
+    private boolean isOnline(){
+        ConnectivityManager conMgr = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = conMgr.getActiveNetworkInfo();
+
+        if(netInfo == null || !netInfo.isConnected() || !netInfo.isAvailable()){
+            return false;
+        }
+        return true;
     }
 
     /** A method to download json data from url */
