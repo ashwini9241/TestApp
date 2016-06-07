@@ -29,23 +29,16 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class MyActivity extends ListActivity {
 
     public static final String TAG = "MyActivity";
-    //url to get sample JSON data
-    private static String urlStr = "https://gist.githubusercontent.com/maclir/f715d78b49c3b4b3b77f/raw/8854ab2fe4cbe2a5919cea97d71b714ae5a4838d/items.json";
-    // JSON node names
-    private static final String TITLE = "title";
-    private static final String IMAGE_URL = "image";
-    private static final String DESCRIPTION = "description";
 
     JSONArray sampleData = null;
 
     private ProgressDialog pDialog;
     ListView mListView;
-    ArrayList<HashMap<String, String>> itemList;
+    ArrayList<DummyData> itemList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,28 +75,11 @@ public class MyActivity extends ListActivity {
         } else {
 
 
-            itemList = new ArrayList<HashMap<String, String>>();
-
+            itemList = new ArrayList<DummyData>();
             mListView = getListView();
-            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    String title = ((TextView) view.findViewById(R.id.tv_title)).getText().toString();
-                    String detail = ((TextView) view.findViewById(R.id.tv_detail)).getText().toString();
-                    HashMap<String, String> map = (HashMap<String, String>) parent.getItemAtPosition(position);
 
-                    String imageUrl = map.get(IMAGE_URL);
-
-                    Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
-                    in.putExtra(TITLE, title);
-                    in.putExtra(DESCRIPTION, detail);
-                    in.putExtra(IMAGE_URL, imageUrl);
-
-                    startActivity(in);
-                }
-            });
-
-            new DownloadTask().execute(urlStr);
+            // Download and parse JSON data using given URL asynchronously.
+            new DownloadTask().execute(Constant.DataURL);
         }
     }
 
@@ -117,7 +93,7 @@ public class MyActivity extends ListActivity {
         return true;
     }
 
-    /** A method to download json data from url */
+    /** method to download json data from url */
     private String downloadUrl(String strUrl) throws IOException{
         String data = "";
         InputStream iStream = null;
@@ -134,7 +110,6 @@ public class MyActivity extends ListActivity {
             iStream = urlConnection.getInputStream();
 
             BufferedReader br = new BufferedReader(new InputStreamReader(iStream));
-
             StringBuilder sb  = new StringBuilder();
 
             String line;
@@ -158,24 +133,22 @@ public class MyActivity extends ListActivity {
 
     private class DownloadTask extends AsyncTask<String, Integer, String> {
 
-
         @Override
         protected String doInBackground(String... params) {
             String data = null;
             try{
+                // download JSON data from given url
                 data = downloadUrl(params[0]);
+
+                // parse JSON array and create list<DummyData>
                 JSONArray jsonArray = new JSONArray(data);
                 for(int i=0; i<jsonArray.length(); i++){
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    String title = jsonObject.getString(TITLE);
-                    String detail = jsonObject.getString(DESCRIPTION);
-                    String imageUrl = jsonObject.getString(IMAGE_URL);
+                    String title = jsonObject.getString(Constant.TITLE);
+                    String detail = jsonObject.getString(Constant.DESCRIPTION);
+                    String imageUrl = jsonObject.getString(Constant.IMAGE_URL);
 
-                    HashMap<String, String> item = new HashMap<String, String>();
-                    item.put(TITLE, title);
-                    item.put(DESCRIPTION, detail);
-                    item.put(IMAGE_URL, imageUrl);
-                    itemList.add(item);
+                    itemList.add(new DummyData(title, detail, imageUrl));
                 }
             }catch(Exception e){
                 android.util.Log.d(TAG, "Background Task" + e.toString());
@@ -201,10 +174,24 @@ public class MyActivity extends ListActivity {
                 pDialog.dismiss();
             }
 
-            ListAdapter adapter = new SimpleAdapter(MyActivity.this, itemList,
-                    R.layout.lv_item, new String[] {TITLE, DESCRIPTION, IMAGE_URL},
-                        new int[]{R.id.tv_title, R.id.tv_detail});
-            setListAdapter(adapter);
+            // changed to customAdapter, added image view to list item.
+            // handling loading of imageview from customAdapter.
+
+            final CustomListAdapter adapter = new CustomListAdapter(MyActivity.this, itemList);
+            mListView.setAdapter(adapter);
+
+            mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                    DummyData data = adapter.getItem(position);
+                    Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
+                    in.putExtra(Constant.TITLE, data.getTitle());
+                    in.putExtra(Constant.DESCRIPTION, data.getDescription());
+                    in.putExtra(Constant.IMAGE_URL, data.getImageUrl());
+
+                    startActivity(in);
+                }
+            });
 
 
         }
