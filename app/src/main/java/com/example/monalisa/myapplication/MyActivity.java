@@ -33,6 +33,8 @@ import java.util.ArrayList;
 public class MyActivity extends ListActivity {
 
     public static final String TAG = "MyActivity";
+    private static final String POS = "VisibleItemPosition";
+    public static final String LIST = "ListParcel";
 
     JSONArray sampleData = null;
 
@@ -74,12 +76,45 @@ public class MyActivity extends ListActivity {
             }
         } else {
 
-
-            itemList = new ArrayList<DummyData>();
             mListView = getListView();
 
-            // Download and parse JSON data using given URL asynchronously.
-            new DownloadTask().execute(Constant.DataURL);
+            // recreating from savedInstance
+            if(savedInstanceState != null){
+                // Activity is recreated
+                itemList = savedInstanceState.getParcelableArrayList(LIST);
+                Log.d(TAG, "onCreate: MyActivity recreated. ");
+
+                final CustomListAdapter customAdapter = new CustomListAdapter(MyActivity.this, itemList);
+                mListView.setAdapter(customAdapter);
+                mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                        DummyData data = customAdapter.getItem(position);
+                        startDetailActivity(data);
+                    }
+                });
+            }else {
+                itemList = new ArrayList<DummyData>();
+                // Download and parse JSON data using given URL asynchronously.
+                new DownloadTask().execute(Constant.DataURL);
+            }
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putParcelableArrayList(LIST, itemList);
+        int index = mListView.getFirstVisiblePosition();
+        outState.putInt(POS, index);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle state) {
+        super.onRestoreInstanceState(state);
+        if(state != null){
+            int firstVisibleItem = state.getInt(POS);
+            mListView.setSelection(firstVisibleItem);
         }
     }
 
@@ -136,13 +171,13 @@ public class MyActivity extends ListActivity {
         @Override
         protected String doInBackground(String... params) {
             String data = null;
-            try{
+            try {
                 // download JSON data from given url
                 data = downloadUrl(params[0]);
 
                 // parse JSON array and create list<DummyData>
                 JSONArray jsonArray = new JSONArray(data);
-                for(int i=0; i<jsonArray.length(); i++){
+                for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
                     String title = jsonObject.getString(Constant.TITLE);
                     String detail = jsonObject.getString(Constant.DESCRIPTION);
@@ -150,7 +185,7 @@ public class MyActivity extends ListActivity {
 
                     itemList.add(new DummyData(title, detail, imageUrl));
                 }
-            }catch(Exception e){
+            } catch (Exception e) {
                 android.util.Log.d(TAG, "Background Task" + e.toString());
             }
             Log.d(TAG, "doInBackground: list size =" + itemList.size());
@@ -160,6 +195,7 @@ public class MyActivity extends ListActivity {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+
             pDialog = new ProgressDialog(MyActivity.this);
             pDialog.setMessage("Please Wait...");
             pDialog.setCancelable(false);
@@ -184,15 +220,10 @@ public class MyActivity extends ListActivity {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
                     DummyData data = adapter.getItem(position);
-                    Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
-                    in.putExtra(Constant.TITLE, data.getTitle());
-                    in.putExtra(Constant.DESCRIPTION, data.getDescription());
-                    in.putExtra(Constant.IMAGE_URL, data.getImageUrl());
+                    startDetailActivity(data);
 
-                    startActivity(in);
                 }
             });
-
 
         }
 
@@ -200,6 +231,15 @@ public class MyActivity extends ListActivity {
         protected void onCancelled() {
             super.onCancelled();
         }
+    }
+
+    private void startDetailActivity(DummyData data){
+        Intent in = new Intent(getApplicationContext(), ItemDetailActivity.class);
+        in.putExtra(Constant.TITLE, data.getTitle());
+        in.putExtra(Constant.DESCRIPTION, data.getDescription());
+        in.putExtra(Constant.IMAGE_URL, data.getImageUrl());
+
+        startActivity(in);
     }
 
 }
